@@ -139,6 +139,72 @@ services:
       - debezium-network
 
 
+  # ============================================================
+  # AIRFLOW METADATA DATABASE
+  # ============================================================
+  airflow-postgres:
+    image: postgres:18
+    container_name: airflow-postgres
+    hostname: airflow-postgres
+
+    environment:
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
+
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql
+
+    networks:
+      - debezium-network
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${AIRFLOW_POSTGRES_USER} -d ${AIRFLOW_POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+
+  # ============================================================
+  # AIRFLOW
+  # ============================================================
+  airflow:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow
+    hostname: airflow
+
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
+
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+
+    ports:
+      - "${AIRFLOW_PORT}:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+
+    networks:
+      - debezium-network
+
+    command: standalone
+
+
+
 # ============================================================
 # NETWORK
 # ============================================================
@@ -153,3 +219,4 @@ networks:
 volumes:
   postgres_data:
   kafka_data:
+  airflow_postgres_data:
