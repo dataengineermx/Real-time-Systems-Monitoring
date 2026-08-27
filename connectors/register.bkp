@@ -1,0 +1,26 @@
+{
+  "name": "postgres-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "postgres",
+    "database.dbname": "sales",
+
+    "topic.prefix": "sales",
+
+    "plugin.name": "pgoutput",
+
+    "publication.autocreate.mode": "filtered",
+
+    "slot.name": "debezium_sales",
+
+    "table.include.list": "public.customers",
+
+    "snapshot.mode": "initial",
+
+    "include.schema.changes": "false"
+  }
+}
