@@ -203,6 +203,95 @@ services:
 
     command: standalone
 
+  # ============================================================
+  # APACHE FLINK - JOBMANAGER
+  # ============================================================
+
+  flink-jobmanager:
+    build:
+      context: ./flink
+      dockerfile: Dockerfile
+    image: real-time-systems-monitoring/flink:2.3.0-kafka
+    container_name: flink-jobmanager
+    hostname: flink-jobmanager
+
+    ports:
+      - "8081:8081"
+
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1600m
+        taskmanager.memory.process.size: 2048m
+        taskmanager.numberOfTaskSlots: 2
+        s3.region: us-east-1
+        s3.access-key: ${MINIO_ROOT_USER}
+        s3.secret-key: ${MINIO_ROOT_PASSWORD}
+        s3.endpoint: http://minio:9000
+        s3.path-style-access: true
+        security.delegation.token.provider.s3-native.enabled: false
+
+    command: jobmanager
+
+    networks:
+      - debezium-network
+
+
+
+  # ============================================================
+  # APACHE FLINK - TASKMANAGER
+  # ============================================================
+
+
+  flink-taskmanager:
+    build:
+      context: ./flink
+      dockerfile: Dockerfile
+    image: real-time-systems-monitoring/flink:2.3.0-kafka
+    container_name: flink-taskmanager
+    hostname: flink-taskmanager
+
+    depends_on:
+      - flink-jobmanager
+
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 2048m
+        taskmanager.numberOfTaskSlots: 2
+        s3.region: us-east-1
+        s3.access-key: ${MINIO_ROOT_USER}
+        s3.secret-key: ${MINIO_ROOT_PASSWORD}
+        s3.endpoint: http://minio:9000
+        s3.path-style-access: true
+
+    command: taskmanager
+
+    networks:
+      - debezium-network
+
+
+  # ============================================================
+  # MINIO
+  # ============================================================
+
+
+  minio:
+    image: minio/minio:latest
+
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+    volumes:
+      - minio_data:/data
+    networks:
+      - debezium-network
 
 
 # ============================================================
@@ -220,3 +309,4 @@ volumes:
   postgres_data:
   kafka_data:
   airflow_postgres_data:
+  minio_data:

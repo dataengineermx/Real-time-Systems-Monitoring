@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    cdc_data_pipeline:
+      name: "DEV-Real-time-Systems-Monitoring-CDC-Pipeline"
+
+
+      # 1. SERVERLESS CONFIG
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "3"
+
+      tasks:
+        - task_key: bronze_ingestion
+          environment_key: default 
+          spark_python_task:
+            python_file: ../notebooks/bronze_ingestion.py
+
+
+        - task_key: silver_transformation
+          environment_key: default
+          depends_on:
+            - task_key: bronze_ingestion
+          spark_python_task:
+            python_file: ../notebooks/silver_transformation.py
