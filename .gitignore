@@ -1,1 +1,10 @@
 .env
+## Local Backups
+*.bkp
+
+## Python
+__pycache__/
+*.pyc
+
+## Compiled Java artifacts
+*.class
